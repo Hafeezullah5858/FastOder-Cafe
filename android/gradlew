@@ -1,0 +1,34 @@
+#!/usr/bin/env sh
+set -eu
+
+# FastOder Cafe build wrapper: keeps the repository self-contained without requiring
+# Gradle to be preinstalled on the build machine.
+APP_HOME=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+GRADLE_VERSION=8.9
+CACHE_DIR="${GRADLE_USER_HOME:-$HOME/.gradle}/wrapper/dists/gradle-${GRADLE_VERSION}-bin"
+DIST_DIR="$CACHE_DIR/foododer-bootstrap"
+GRADLE_BIN="$DIST_DIR/gradle-${GRADLE_VERSION}/bin/gradle"
+
+if [ ! -x "$GRADLE_BIN" ]; then
+  mkdir -p "$CACHE_DIR"
+  TMP="$CACHE_DIR/gradle-${GRADLE_VERSION}-bin.zip"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$TMP" "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -O "$TMP" "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip"
+  else
+    echo "ERROR: curl or wget is required to bootstrap Gradle ${GRADLE_VERSION}." >&2
+    exit 1
+  fi
+  rm -rf "$DIST_DIR"
+  mkdir -p "$DIST_DIR"
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -q "$TMP" -d "$DIST_DIR"
+  else
+    echo "ERROR: unzip is required to bootstrap Gradle ${GRADLE_VERSION}." >&2
+    exit 1
+  fi
+  rm -f "$TMP"
+fi
+
+exec "$GRADLE_BIN" "$@"

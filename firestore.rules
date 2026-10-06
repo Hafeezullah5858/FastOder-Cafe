@@ -1,0 +1,238 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
+    function role() { return signedIn() ? userDoc(request.auth.uid).role : null; }
+    function isAdmin() { return role() == 'admin'; }
+    function isVendor() { return role() == 'vendor' || role() == 'home_chef'; }
+    function isRider() { return role() == 'rider'; }
+    function isCustomer() { return role() == 'customer'; }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.role == 'customer'
+        && request.resource.data.uid == uid;
+      allow update: if isAdmin() || (
+        signedIn() && request.auth.uid == uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'name', 'email', 'phone', 'photoUrl', 'fcmToken', 'updatedAt'
+        ])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /users/{uid}/addresses/{addressId} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.label is string
+        && request.resource.data.address is string
+        && request.resource.data.phone is string
+        && request.resource.data.isDefault is bool;
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.label is string
+        && request.resource.data.address is string
+        && request.resource.data.phone is string
+        && request.resource.data.isDefault is bool;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /home_chef_applications/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.userId == uid
+        && request.resource.data.status == 'pending';
+      allow update: if isAdmin() || (signedIn() && request.auth.uid == uid
+        && resource.data.userId == uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.status in ['pending', 'withdrawn']);
+      allow delete: if isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isVendor()
+        && (role() != 'home_chef' || userDoc(request.auth.uid).sellerApproved == true)
+        && request.resource.data.vendorId == request.auth.uid
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0;
+      allow update, delete: if isVendor()
+        && resource.data.vendorId == request.auth.uid
+        && request.resource.data.vendorId == resource.data.vendorId;
+    }
+
+    function orderBaseFieldsUnchanged() {
+      return request.resource.data.customerId == resource.data.customerId
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.items == resource.data.items
+        && request.resource.data.total == resource.data.total
+        && request.resource.data.subtotal == resource.data.subtotal
+        && request.resource.data.deliveryFee == resource.data.deliveryFee
+        && request.resource.data.platformFee == resource.data.platformFee
+        && request.resource.data.commission == resource.data.commission
+        && request.resource.data.commissionRate == resource.data.commissionRate
+        && request.resource.data.sellerPayout == resource.data.sellerPayout
+        && request.resource.data.discount == resource.data.discount
+        && request.resource.data.couponCode == resource.data.couponCode
+        && request.resource.data.address == resource.data.address
+        && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.paymentStatus == resource.data.paymentStatus
+        && request.resource.data.refundStatus == resource.data.refundStatus
+        && request.resource.data.cancellationReason == resource.data.cancellationReason
+        && request.resource.data.deliveryLat == resource.data.deliveryLat
+        && request.resource.data.deliveryLng == resource.data.deliveryLng;
+    }
+
+    function vendorStatusChange() {
+      return isVendor()
+        && resource.data.vendorId == request.auth.uid
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.riderId == resource.data.riderId
+        && orderBaseFieldsUnchanged()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+        && (
+          (resource.data.status == 'placed' && request.resource.data.status == 'accepted') ||
+          (resource.data.status == 'accepted' && request.resource.data.status == 'preparing') ||
+          (resource.data.status == 'preparing' && request.resource.data.status == 'ready')
+        );
+    }
+
+    function riderStatusChange() {
+      return isRider()
+        && request.resource.data.customerId == resource.data.customerId
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.items == resource.data.items
+        && request.resource.data.total == resource.data.total
+        && request.resource.data.subtotal == resource.data.subtotal
+        && request.resource.data.deliveryFee == resource.data.deliveryFee
+        && request.resource.data.platformFee == resource.data.platformFee
+        && request.resource.data.commission == resource.data.commission
+        && request.resource.data.commissionRate == resource.data.commissionRate
+        && request.resource.data.sellerPayout == resource.data.sellerPayout
+        && request.resource.data.discount == resource.data.discount
+        && request.resource.data.couponCode == resource.data.couponCode
+        && request.resource.data.address == resource.data.address
+        && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.paymentStatus == resource.data.paymentStatus
+        && request.resource.data.refundStatus == resource.data.refundStatus
+        && request.resource.data.cancellationReason == resource.data.cancellationReason
+        && request.resource.data.deliveryLat == resource.data.deliveryLat
+        && request.resource.data.deliveryLng == resource.data.deliveryLng
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','riderId','updatedAt'])
+        && (
+          (resource.data.status == 'ready' && request.resource.data.status == 'picked_up' && request.resource.data.riderId == request.auth.uid) ||
+          (resource.data.status == 'picked_up' && resource.data.riderId == request.auth.uid && request.resource.data.riderId == request.auth.uid && request.resource.data.status == 'on_the_way') ||
+          (resource.data.status == 'on_the_way' && resource.data.riderId == request.auth.uid && request.resource.data.riderId == request.auth.uid && request.resource.data.status == 'delivered')
+        );
+    }
+
+    match /orders/{orderId} {
+      // Orders are created only by the trusted createOrderSecure Cloud Function.
+      allow create: if false;
+      allow read: if signedIn() && (
+        resource.data.customerId == request.auth.uid ||
+        resource.data.vendorId == request.auth.uid ||
+        resource.data.riderId == request.auth.uid ||
+        (isRider() && resource.data.status == 'ready') ||
+        isAdmin()
+      );
+      allow update: if isAdmin() || vendorStatusChange() || riderStatusChange() || (
+        signedIn()
+        && resource.data.customerId == request.auth.uid
+        && resource.data.status == 'placed'
+        && request.resource.data.status == 'cancelled'
+        && request.resource.data.customerId == resource.data.customerId
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.items == resource.data.items
+        && request.resource.data.total == resource.data.total
+        && request.resource.data.subtotal == resource.data.subtotal
+        && request.resource.data.deliveryFee == resource.data.deliveryFee
+        && request.resource.data.platformFee == resource.data.platformFee
+        && request.resource.data.commission == resource.data.commission
+        && request.resource.data.commissionRate == resource.data.commissionRate
+        && request.resource.data.sellerPayout == resource.data.sellerPayout
+        && request.resource.data.discount == resource.data.discount
+        && request.resource.data.couponCode == resource.data.couponCode
+        && request.resource.data.address == resource.data.address
+        && request.resource.data.paymentMethod == resource.data.paymentMethod
+        && request.resource.data.paymentStatus == resource.data.paymentStatus
+        && request.resource.data.deliveryLat == resource.data.deliveryLat
+        && request.resource.data.deliveryLng == resource.data.deliveryLng
+        && request.resource.data.riderId == resource.data.riderId
+        && ((resource.data.paymentMethod == 'cash_on_delivery' && request.resource.data.refundStatus == 'not_applicable') || (resource.data.paymentMethod != 'cash_on_delivery' && request.resource.data.refundStatus == 'pending'))
+        && request.resource.data.cancellationReason is string
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','cancellationReason','refundStatus','updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /coupons/{code} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && exists(/databases/$(database)/documents/orders/$(request.resource.data.orderId))
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.customerId == request.auth.uid
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.status == 'delivered'
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.vendorId == request.resource.data.vendorId;
+      allow update: if signedIn()
+        && resource.data.customerId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt'])
+        && request.resource.data.orderId == resource.data.orderId
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.customerId == resource.data.customerId
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5;
+      allow delete: if signedIn() && resource.data.customerId == request.auth.uid;
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.recipientId == request.auth.uid;
+      // Notifications are created only by trusted Cloud Functions/Admin.
+      allow create: if false;
+      allow update: if signedIn() && resource.data.recipientId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if signedIn() && resource.data.recipientId == request.auth.uid;
+    }
+
+    match /payments/{paymentId} {
+      allow read: if signedIn() && (resource.data.customerId == request.auth.uid || isAdmin());
+      // Payment records are created only by trusted backend functions.
+      allow create: if false;
+      allow update, delete: if isAdmin();
+    }
+
+    match /refund_requests/{refundId} {
+      allow read: if signedIn() && (resource.data.customerId == request.auth.uid || isAdmin());
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.orderId is string
+        && exists(/databases/$(database)/documents/orders/$(request.resource.data.orderId))
+        && get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.customerId == request.auth.uid
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 0
+        && request.resource.data.amount <= get(/databases/$(database)/documents/orders/$(request.resource.data.orderId)).data.total
+        && request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /rider_locations/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin() || isVendor());
+      allow write: if signedIn() && request.auth.uid == uid && isRider()
+        && request.resource.data.lat is number
+        && request.resource.data.lng is number;
+    }
+  }
+}

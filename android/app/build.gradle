@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'dev.flutter.flutter-gradle-plugin'
+    id 'com.google.gms.google-services'
+}
+
+android {
+    namespace 'com.foododer.app'
+    compileSdk flutter.compileSdkVersion
+
+    // The key is injected by CI/local builds when available. An empty value
+    // keeps APK compilation possible; Google Maps itself requires a valid key
+    // before map features can be used in production.
+    def mapsKey = System.getenv('GOOGLE_MAPS_API_KEY') ?: ''
+    manifestPlaceholders = [GOOGLE_MAPS_API_KEY: mapsKey]
+
+    defaultConfig {
+        applicationId 'com.foododer.app'
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+    }
+
+    signingConfigs {
+        release {
+            // Configure these environment variables in CI/local release builds.
+            // Never commit the keystore or passwords to source control.
+            def ksPath = System.getenv('FOODODER_KEYSTORE_PATH')
+            def ksPassword = System.getenv('FOODODER_KEYSTORE_PASSWORD')
+            def keyAliasValue = System.getenv('FOODODER_KEY_ALIAS')
+            def keyPasswordValue = System.getenv('FOODODER_KEY_PASSWORD')
+            if (ksPath && ksPassword && keyAliasValue && keyPasswordValue) {
+                storeFile file(ksPath)
+                storePassword ksPassword
+                keyAlias keyAliasValue
+                keyPassword keyPasswordValue
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // Intentionally do NOT fall back to debug signing.
+            // A release build must have an explicitly configured production keystore.
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+flutter {
+    source '../..'
+}
