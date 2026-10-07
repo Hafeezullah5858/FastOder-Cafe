@@ -9,13 +9,13 @@ android {
     namespace 'com.foododer.app'
     compileSdk flutter.compileSdkVersion
 
-    // The key is injected by CI/local builds when available. An empty value
-    // keeps APK compilation possible; Google Maps itself requires a valid key
-    // before map features can be used in production.
+    // The key is injected by CI/local builds when available.
+    // An empty value keeps APK compilation possible; Google Maps itself
+    // requires a valid key before map features can be used in production.
     def mapsKey = System.getenv('GOOGLE_MAPS_API_KEY') ?: ''
-    manifestPlaceholders = [GOOGLE_MAPS_API_KEY: mapsKey]
 
     defaultConfig {
+        manifestPlaceholders = [GOOGLE_MAPS_API_KEY: mapsKey]
         applicationId 'com.foododer.app'
         minSdk flutter.minSdkVersion
         targetSdk flutter.targetSdkVersion
@@ -31,6 +31,7 @@ android {
             def ksPassword = System.getenv('FOODODER_KEYSTORE_PASSWORD')
             def keyAliasValue = System.getenv('FOODODER_KEY_ALIAS')
             def keyPasswordValue = System.getenv('FOODODER_KEY_PASSWORD')
+
             if (ksPath && ksPassword && keyAliasValue && keyPasswordValue) {
                 storeFile file(ksPath)
                 storePassword ksPassword
