@@ -4,7 +4,7 @@ set -eu
 # FastOder Cafe build wrapper: keeps the repository self-contained without requiring
 # Gradle to be preinstalled on the build machine.
 APP_HOME=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-GRADLE_VERSION=8.9
+GRADLE_VERSION=8.14.5
 CACHE_DIR="${GRADLE_USER_HOME:-$HOME/.gradle}/wrapper/dists/gradle-${GRADLE_VERSION}-bin"
 DIST_DIR="$CACHE_DIR/foododer-bootstrap"
 GRADLE_BIN="$DIST_DIR/gradle-${GRADLE_VERSION}/bin/gradle"
