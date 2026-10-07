@@ -8,7 +8,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'services/auth_service.dart';
 import 'services/order_service.dart';
 import 'services/review_service.dart';
@@ -231,7 +233,7 @@ class SavedAddressesSheet extends StatelessWidget {
     final save=await showDialog<bool>(context:context,builder:(d)=>StatefulBuilder(builder:(d,setD)=>AlertDialog(title:Text(a==null?'Add address':'Edit address'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:label,decoration:const InputDecoration(labelText:'Label (Home, Work...)')),TextField(controller:addr,maxLines:2,decoration:const InputDecoration(labelText:'Full address')),TextField(controller:phone,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'Phone')),SwitchListTile(value:def,onChanged:(v)=>setD(()=>def=v),title:const Text('Make default'))])),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('Save'))])));
     if(save==true && addr.text.trim().isNotEmpty){await AddressService().save(id:a?.id,label:label.text,address:addr.text,phone:phone.text,isDefault:def,lat:a?.lat,lng:a?.lng);}
   }
-  @override Widget build(BuildContext context)=>SafeArea(child:DraggableScrollableSheet(expand:false,initialChildSize:.7,builder:(c,scroll)=>Column(children:[ListTile(title:const Text('Saved Addresses',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),trailing:IconButton(icon:const Icon(Icons.add),onPressed:()=>_edit(context))),Expanded(child:StreamBuilder<List<SavedAddress>>(stream:AddressService().watch(),builder:(c,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('No saved addresses'));return ListView.builder(controller:scroll,itemCount:s.data!.length,itemBuilder:(c,i){final a=s.data![i];return ListTile(leading:Icon(a.isDefault?Icons.home:Icons.location_on_outlined),title:Text('${a.label}${a.isDefault?' • Default':''}'),subtitle:Text('${a.address}\n${a.phone}'),isThreeLine:true,onTap:()=>Navigator.pop(context,a),trailing:Wrap(mainAxisSize:MainAxisSize.min,children:[IconButton(icon:const Icon(Icons.edit_outlined),onPressed:()=>_edit(context,a)),IconButton(icon:const Icon(Icons.delete_outline),onPressed:()=>AddressService().remove(a.id))]));});}))])));
+  @override Widget build(BuildContext context)=>SafeArea(child:DraggableScrollableSheet(expand:false,initialChildSize:.7,builder:(c,scroll)=>Column(children:[ListTile(title:const Text('Saved Addresses',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold)),trailing:IconButton(icon:const Icon(Icons.add),onPressed:()=>_edit(context))),Expanded(child:StreamBuilder<List<SavedAddress>>(stream:AddressService().watch(),builder:(c,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('No saved addresses'));return ListView.builder(controller:scroll,itemCount:s.data!.length,itemBuilder:(c,i){final a=s.data![i];return ListTile(leading:Icon(a.isDefault?Icons.home:Icons.location_on_outlined),title:Text('${a.label}${a.isDefault?' • Default':''}'),subtitle:Text('${a.address}\n${a.phone}'),isThreeLine:true,onTap:()=>Navigator.pop(context,a),trailing:Wrap(children:[IconButton(icon:const Icon(Icons.edit_outlined),onPressed:()=>_edit(context,a)),IconButton(icon:const Icon(Icons.delete_outline),onPressed:()=>AddressService().remove(a.id))]));});}))])));
 }
 
 class NotificationsSheet extends StatelessWidget {
@@ -282,7 +284,7 @@ class OrdersTab extends StatelessWidget {
         title: Text('Order #${o.id.substring(0, 6)}'),
         subtitle: Text('${o.status} • Rs. ${o.total.toStringAsFixed(0)}\n${o.address}'),
         isThreeLine: true,
-        trailing: Wrap(mainAxisSize: MainAxisSize.min, children: [
+        trailing: Wrap( children: [
           if (o.status == 'placed') IconButton(icon: const Icon(Icons.cancel_outlined), tooltip: 'Cancel order', onPressed: () async { final reason = await showDialog<String>(context: c, builder: (d) { final ctl = TextEditingController(); return AlertDialog(title: const Text('Cancel order?'), content: TextField(controller: ctl, maxLines: 2, decoration: const InputDecoration(labelText: 'Reason (optional)')), actions: [TextButton(onPressed: () => Navigator.pop(d), child: const Text('Keep')), FilledButton(onPressed: () => Navigator.pop(d, ctl.text.trim().isEmpty ? 'Customer cancellation' : ctl.text.trim()), child: const Text('Cancel order'))]); }); if (reason != null) { try { await OrderService().cancelOrder(o.id, reason); if (c.mounted) ScaffoldMessenger.of(c).showSnackBar(const SnackBar(content: Text('Order cancelled'))); } catch (e) { if (c.mounted) ScaffoldMessenger.of(c).showSnackBar(SnackBar(content: Text('$e'))); } } }),
           if (o.status == 'delivered') IconButton(icon: const Icon(Icons.star_outline), tooltip: 'Rate order', onPressed: () => _review(c, o)),
           if (o.riderId.isNotEmpty && o.status != 'delivered') IconButton(icon: const Icon(Icons.location_on), tooltip: 'Track rider', onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => OrderTrackingPage(order: o)))),
