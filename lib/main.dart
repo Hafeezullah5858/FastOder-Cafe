@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(width: double.infinity, child: FilledButton(onPressed: loading ? null : login, child: loading ? const CircularProgressIndicator() : const Text('Login'))),
           TextButton(onPressed: () => Navigator.push(c, MaterialPageRoute(builder: (_) => const SignUpPage())), child: const Text('Create new account')),
           TextButton(onPressed: () async { if (email.text.trim().isEmpty) return _msg('پہلے email درج کریں'); try { await AuthService().sendPasswordReset(email.text); _msg('Password reset email بھیج دی گئی'); } catch (_) { _msg('Reset email نہیں بھیجی جا سکی'); } }, child: const Text('Forgot password?')),
-        ]))),
+        ])))),
       );
 }
 
@@ -158,7 +158,7 @@ class _HomeTabState extends State<HomeTab> {
       return ListView(padding: const EdgeInsets.all(16), children: [
         TextField(decoration: InputDecoration(hintText: 'Search food or stores...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(18)))),
         const SizedBox(height: 18), const Text('Categories', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8), Wrap(spacing: 8, children: ['All','Home Made','Pizza','Burger','Biryani','BBQ','Dessert','Drinks'].map((x) => ChoiceChip(label: Text(x), selected: selected == x, onSelected: (_) => setState(() => selected = x)).toList()),
+        const SizedBox(height: 8), Wrap(spacing: 8, children: ['All','Home Made','Pizza','Burger','Biryani','BBQ','Dessert','Drinks'].map((x) => ChoiceChip(label: Text(x), selected: selected == x, onSelected: (_) => setState(() => selected = x))).toList()),
         const SizedBox(height: 18), Text(selected == 'Home Made' ? '🏠 Home Made Food' : 'Menu', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         if (snap.hasError) Text('Products error: ${snap.error}'),
         if (filtered.isEmpty) const Padding(padding: EdgeInsets.all(30), child: Center(child: Text('ابھی کوئی food item available نہیں۔'))),
@@ -202,7 +202,7 @@ class _CartSheetState extends State<CartSheet> {
 
   @override Widget build(BuildContext c) => Padding(padding: EdgeInsets.only(bottom: MediaQuery.of(c).viewInsets.bottom), child: SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(18), child: Column(mainAxisSize: MainAxisSize.min, children: [
     const Text('Your Cart', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-    ...widget.items.map((e) => ListTile(title: Text('${e['name']}'), subtitle: Text('Rs. ${e['price']}'), leading: IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () => setState(() { if ((e['qty'] as int) > 1) e['qty'] = (e['qty'] as int) - 1; else widget.items.remove(e); }); widget.onChanged()), trailing: Text('x${e['qty']}'))),
+    ...widget.items.map((e) => ListTile(title: Text('${e['name']}'), subtitle: Text('Rs. ${e['price']}'), leading: IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () { setState(() { if ((e['qty'] as int) > 1) e['qty'] = (e['qty'] as int) - 1; else widget.items.remove(e); }); widget.onChanged(); }), trailing: Text('x${e['qty']}'))),
     if (widget.items.isNotEmpty) ...[
       _line('Subtotal', quote.subtotal),
       _line('Delivery', quote.deliveryFee),
@@ -292,7 +292,7 @@ class OrdersTab extends StatelessWidget {
   }
 }
 
-class ProfileTab extends StatelessWidget { const ProfileTab({super.key}); @override Widget build(BuildContext c) { final u = FirebaseAuth.instance.currentUser; return ListView(padding: const EdgeInsets.all(18), children: [const CircleAvatar(radius: 42, child: Icon(Icons.person, size: 42)), const SizedBox(height: 10), Center(child: Text(u?.displayName ?? 'FastOder Cafe User', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))), Center(child: Text(u?.email ?? '')), const SizedBox(height: 20), Card(child: ListTile(leading: const Icon(Icons.home_work_outlined), title: const Text('Sell Home Made Food'), subtitle: const Text('Apply as a Home Chef and sell food from your kitchen'), onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => const HomeChefApplicationPage())))), Card(child: ListTile(leading: const Icon(Icons.business_center), title: const Text('Business Panel'), subtitle: const Text('Vendor • Home Chef • Rider • Admin'), onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => const RoleHubPage())))), Card(child: ListTile(leading: const Icon(Icons.logout), title: const Text('Logout'), onTap: () => AuthService().signOut()))]; } }
+class ProfileTab extends StatelessWidget { const ProfileTab({super.key}); @override Widget build(BuildContext c) { final u = FirebaseAuth.instance.currentUser; return ListView(padding: const EdgeInsets.all(18), children: [const CircleAvatar(radius: 42, child: Icon(Icons.person, size: 42)), const SizedBox(height: 10), Center(child: Text(u?.displayName ?? 'FastOder Cafe User', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))), Center(child: Text(u?.email ?? '')), const SizedBox(height: 20), Card(child: ListTile(leading: const Icon(Icons.home_work_outlined), title: const Text('Sell Home Made Food'), subtitle: const Text('Apply as a Home Chef and sell food from your kitchen'), onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => const HomeChefApplicationPage())))), Card(child: ListTile(leading: const Icon(Icons.business_center), title: const Text('Business Panel'), subtitle: const Text('Vendor • Home Chef • Rider • Admin'), onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => const RoleHubPage())))), Card(child: ListTile(leading: const Icon(Icons.logout), title: const Text('Logout'), onTap: () => AuthService().signOut()))]); } }
 
 class HomeChefApplicationPage extends StatefulWidget {
   const HomeChefApplicationPage({super.key});
@@ -347,10 +347,117 @@ class _VendorPanelState extends State<VendorPanel> {
     final payload = {'vendorId': vendorId, 'vendorType': (await AuthService().getRole()) == 'home_chef' ? 'home_chef' : 'restaurant', 'name': name.text.trim(), 'price': double.parse(price.text), 'active': active, 'imageUrl': imageUrl.text.trim(), 'updatedAt': FieldValue.serverTimestamp()};
     if (doc == null) await db.collection('products').add({...payload, 'createdAt': FieldValue.serverTimestamp()}); else await db.collection('products').doc(doc.id).update(payload);
   }
-  @override Widget build(BuildContext context) => DefaultTabController(length: 2, child: Scaffold(appBar: AppBar(title: const Text('Seller Panel'), bottom: const TabBar(tabs: [Tab(text: 'Orders'), Tab(text: 'Menu')])), body: TabBarView(children: [
-    StreamBuilder<List<OrderModel>>(stream: orderService.watchVendorOrders(vendorId), builder: (context, snap) { if (snap.hasError) return Center(child: Text('Error: ${snap.error}')); if (!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(padding: const EdgeInsets.all(16), children: snap.data!.map((o) => Card(child: ListTile(title: Text('Order #${o.id.substring(0, 6)}'), subtitle: Text('${o.status} • Rs. ${o.total.toStringAsFixed(0)}\n${o.address}'), isThreeLine: true, trailing: PopupMenuButton<String>(onSelected: (v) => orderService.updateStatus(o.id, v), itemBuilder: (_) => const [PopupMenuItem(value: 'accepted', child: Text('Accept')), PopupMenuItem(value: 'preparing', child: Text('Preparing')), PopupMenuItem(value: 'ready', child: Text('Ready'))]))).toList()); }),
-    Scaffold(floatingActionButton: FloatingActionButton(onPressed: () => _productDialog(), child: const Icon(Icons.add)), body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: db.collection('products').where('vendorId', isEqualTo: vendorId).snapshots(), builder: (context, snap) { if (!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(padding: const EdgeInsets.all(16), children: snap.data!.docs.map((d) { final p = d.data(); return Card(child: ListTile(title: Text(p['name'] ?? ''), subtitle: Text('Rs. ${p['price'] ?? 0}'), trailing: Row(mainAxisSize: MainAxisSize.min, children: [Switch(value: p['active'] ?? false, onChanged: (v) => db.collection('products').doc(d.id).update({'active': v})), IconButton(icon: const Icon(Icons.edit), onPressed: () => _productDialog(d)), IconButton(icon: const Icon(Icons.delete), onPressed: () => db.collection('products').doc(d.id).delete())]))); }).toList()); }))
-  ])));
+  @override
+  Widget build(BuildContext context) => DefaultTabController(
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Seller Panel'),
+            bottom: const TabBar(
+              tabs: [Tab(text: 'Orders'), Tab(text: 'Menu')],
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              StreamBuilder<List<OrderModel>>(
+                stream: orderService.watchVendorOrders(vendorId),
+                builder: (context, snap) {
+                  if (snap.hasError) {
+                    return Center(child: Text('Error: ${snap.error}'));
+                  }
+                  if (!snap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: snap.data!.map((o) => Card(
+                      child: ListTile(
+                        title: Text('Order #${o.id.substring(0, 6)}'),
+                        subtitle: Text(
+                          '${o.status} • Rs. ${o.total.toStringAsFixed(0)}\n${o.address}',
+                        ),
+                        isThreeLine: true,
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (v) =>
+                              orderService.updateStatus(o.id, v),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'accepted',
+                              child: Text('Accept'),
+                            ),
+                            PopupMenuItem(
+                              value: 'preparing',
+                              child: Text('Preparing'),
+                            ),
+                            PopupMenuItem(
+                              value: 'ready',
+                              child: Text('Ready'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )).toList(),
+                  );
+                },
+              ),
+              Scaffold(
+                floatingActionButton: FloatingActionButton(
+                  onPressed: () => _productDialog(),
+                  child: const Icon(Icons.add),
+                ),
+                body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: db
+                      .collection('products')
+                      .where('vendorId', isEqualTo: vendorId)
+                      .snapshots(),
+                  builder: (context, snap) {
+                    if (!snap.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    return ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: snap.data!.docs.map((d) {
+                        final p = d.data();
+                        return Card(
+                          child: ListTile(
+                            title: Text(p['name'] ?? ''),
+                            subtitle: Text('Rs. ${p['price'] ?? 0}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Switch(
+                                  value: p['active'] ?? false,
+                                  onChanged: (v) => db
+                                      .collection('products')
+                                      .doc(d.id)
+                                      .update({'active': v}),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => _productDialog(d),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () => db
+                                      .collection('products')
+                                      .doc(d.id)
+                                      .delete(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class RiderPanel extends StatefulWidget { const RiderPanel({super.key}); @override State<RiderPanel> createState() => _RiderPanelState(); }
@@ -378,9 +485,150 @@ class _RiderPanelState extends State<RiderPanel> {
   @override Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Rider Panel'), actions: [IconButton(onPressed: toggleTracking, icon: Icon(tracking ? Icons.location_on : Icons.location_off))]), body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: FirebaseFirestore.instance.collection('orders').where('status', whereIn: ['ready', 'picked_up', 'on_the_way']).snapshots(), builder: (context, snap) { if (snap.hasError) return Center(child: Text('Error: ${snap.error}')); if (!snap.hasData) return const Center(child: CircularProgressIndicator()); final uid = FirebaseAuth.instance.currentUser!.uid; return ListView(padding: const EdgeInsets.all(16), children: snap.data!.docs.map((d) { final o = OrderModel.fromDoc(d); final mine = o.riderId == uid; return Card(child: ListTile(title: Text('Order #${o.id.substring(0, 6)}'), subtitle: Text('${o.status}\n${o.address}'), isThreeLine: true, trailing: mine ? PopupMenuButton<String>(onSelected: (v) => OrderService().updateStatus(o.id, v), itemBuilder: (_) => const [PopupMenuItem(value: 'on_the_way', child: Text('On the way')), PopupMenuItem(value: 'delivered', child: Text('Delivered'))]) : (o.status == 'ready' ? FilledButton(onPressed: () => accept(o.id), child: const Text('Accept')) : const SizedBox.shrink()))); }).toList()); }));
 }
 
-class AdminPanel extends StatelessWidget { const AdminPanel({super.key}); @override Widget build(BuildContext context) => DefaultTabController(length: 3, child: Scaffold(appBar: AppBar(title: const Text('Admin Dashboard'), bottom: const TabBar(tabs: [Tab(text: 'Orders'), Tab(text: 'Users'), Tab(text: 'Home Chefs')])), body: TabBarView(children: [
-  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: FirebaseFirestore.instance.collection('orders').orderBy('createdAt', descending: true).snapshots(), builder: (context, snap) { if (snap.hasError) return Center(child: Text('Error: ${snap.error}')); if (!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(padding: const EdgeInsets.all(16), children: snap.data!.docs.map((d) { final o = OrderModel.fromDoc(d); return Card(child: ListTile(title: Text('#${o.id.substring(0, 6)} • Rs. ${o.total.toStringAsFixed(0)}'), subtitle: Text('${o.status}\nCustomer: ${o.customerId}\nVendor: ${o.vendorId}\nRider: ${o.riderId.isEmpty ? 'Unassigned' : o.riderId}'), isThreeLine: true)); }).toList()); }),
-  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: FirebaseFirestore.instance.collection('users').orderBy('createdAt', descending: true).snapshots(), builder: (context, snap) { if (!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(padding: const EdgeInsets.all(16), children: snap.data!.docs.map((d) { final u = d.data(); return Card(child: ListTile(title: Text(u['name'] ?? u['email'] ?? d.id), subtitle: Text('${u['email'] ?? ''}\nRole: ${u['role'] ?? 'customer'}'), isThreeLine: true)); }).toList()); }),
-  StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(stream: FirebaseFirestore.instance.collection('home_chef_applications').where('status', isEqualTo: 'pending').snapshots(), builder: (context, snap) { if (!snap.hasData) return const Center(child: CircularProgressIndicator()); return ListView(padding: const EdgeInsets.all(16), children: snap.data!.docs.map((d) { final a = d.data(); return Card(child: ListTile(title: Text(a['kitchenName'] ?? 'Home Chef'), subtitle: Text('${a['area'] ?? ''}\n${a['phone'] ?? ''}\n${a['bio'] ?? ''}'), isThreeLine: true, trailing: Wrap(children: [IconButton(tooltip: 'Approve', icon: const Icon(Icons.check_circle), onPressed: () async { final uid = d.id; await FirebaseFirestore.instance.collection('users').doc(uid).update({'role': 'home_chef', 'sellerApproved': true, 'sellerType': 'home_chef'}); await d.reference.update({'status': 'approved', 'approvedAt': FieldValue.serverTimestamp(), 'approvedBy': FirebaseAuth.instance.currentUser!.uid}); }), IconButton(tooltip: 'Reject', icon: const Icon(Icons.cancel), onPressed: () => d.reference.update({'status': 'rejected', 'updatedAt': FieldValue.serverTimestamp()}))]))); }).toList()); }),
-])); }
+class AdminPanel extends StatelessWidget {
+  const AdminPanel({super.key});
+
+  @override
+  Widget build(BuildContext context) => DefaultTabController(
+        length: 3,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Admin Dashboard'),
+            bottom: const TabBar(
+              tabs: [
+                Tab(text: 'Orders'),
+                Tab(text: 'Users'),
+                Tab(text: 'Home Chefs'),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            children: [
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('orders')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (snap.hasError) {
+                    return Center(child: Text('Error: ${snap.error}'));
+                  }
+                  if (!snap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: snap.data!.docs.map((d) {
+                      final o = OrderModel.fromDoc(d);
+                      return Card(
+                        child: ListTile(
+                          title: Text(
+                            '#${o.id.substring(0, 6)} • Rs. ${o.total.toStringAsFixed(0)}',
+                          ),
+                          subtitle: Text(
+                            '${o.status}\n'
+                            'Customer: ${o.customerId}\n'
+                            'Vendor: ${o.vendorId}\n'
+                            'Rider: ${o.riderId.isEmpty ? 'Unassigned' : o.riderId}',
+                          ),
+                          isThreeLine: true,
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: snap.data!.docs.map((d) {
+                      final u = d.data();
+                      return Card(
+                        child: ListTile(
+                          title: Text(u['name'] ?? u['email'] ?? d.id),
+                          subtitle: Text(
+                            '${u['email'] ?? ''}\n'
+                            'Role: ${u['role'] ?? 'customer'}',
+                          ),
+                          isThreeLine: true,
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('home_chef_applications')
+                    .where('status', isEqualTo: 'pending')
+                    .snapshots(),
+                builder: (context, snap) {
+                  if (!snap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  return ListView(
+                    padding: const EdgeInsets.all(16),
+                    children: snap.data!.docs.map((d) {
+                      final a = d.data();
+                      return Card(
+                        child: ListTile(
+                          title: Text(a['kitchenName'] ?? 'Home Chef'),
+                          subtitle: Text(
+                            '${a['area'] ?? ''}\n'
+                            '${a['phone'] ?? ''}\n'
+                            '${a['bio'] ?? ''}',
+                          ),
+                          isThreeLine: true,
+                          trailing: Wrap(
+                            children: [
+                              IconButton(
+                                tooltip: 'Approve',
+                                icon: const Icon(Icons.check_circle),
+                                onPressed: () async {
+                                  final uid = d.id;
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(uid)
+                                      .update({
+                                    'role': 'home_chef',
+                                    'sellerApproved': true,
+                                    'sellerType': 'home_chef',
+                                  });
+                                  await d.reference.update({
+                                    'status': 'approved',
+                                    'approvedAt':
+                                        FieldValue.serverTimestamp(),
+                                    'approvedBy': FirebaseAuth
+                                        .instance.currentUser!.uid,
+                                  });
+                                },
+                              ),
+                              IconButton(
+                                tooltip: 'Reject',
+                                icon: const Icon(Icons.cancel),
+                                onPressed: () => d.reference.update({
+                                  'status': 'rejected',
+                                  'updatedAt': FieldValue.serverTimestamp(),
+                                }),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      );
 }
