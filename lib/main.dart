@@ -36,8 +36,8 @@ Future<void> main() async {
   // This prevents a fresh development install from being blocked by App Check before
   // the Firebase project has been registered for the production package.
   await FirebaseAppCheck.instance.activate(
-    providerAndroid: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-    providerApple: kDebugMode ? AppleProvider.debug : AppleProvider.appAttestWithDeviceCheckFallback,
+    providerAndroid: kDebugMode ? const AndroidDebugProvider() : const AndroidPlayIntegrityProvider(),
+    providerApple: kDebugMode ? const AppleDebugProvider() : const AppleAppAttestWithDeviceCheckFallbackProvider(),
   );
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const FastOderCafeApp());
