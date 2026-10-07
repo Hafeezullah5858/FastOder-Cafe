@@ -18,7 +18,6 @@ import 'services/notification_service.dart';
 import 'services/location_service.dart';
 import 'services/pricing_service.dart';
 import 'services/coupon_service.dart';
-import 'services/payment_service.dart';
 import 'services/cart_service.dart';
 import 'models/order.dart';
 import 'screens/order_tracking_page.dart';
@@ -37,8 +36,8 @@ Future<void> main() async {
   // This prevents a fresh development install from being blocked by App Check before
   // the Firebase project has been registered for the production package.
   await FirebaseAppCheck.instance.activate(
-    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttestWithDeviceCheckFallback,
+    providerAndroid: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    providerApple: kDebugMode ? AppleProvider.debug : AppleProvider.appAttestWithDeviceCheckFallback,
   );
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   runApp(const FastOderCafeApp());

@@ -10,7 +10,6 @@ class AddressPickerPage extends StatefulWidget {
 }
 
 class _AddressPickerPageState extends State<AddressPickerPage> {
-  GoogleMapController? _map;
   LatLng? _pin;
   bool _loading = true;
 
@@ -36,7 +35,6 @@ class _AddressPickerPageState extends State<AddressPickerPage> {
           myLocationEnabled: true,
           myLocationButtonEnabled: true,
           zoomControlsEnabled: false,
-          onMapCreated: (c) => _map = c,
           onTap: (p) => setState(() => _pin = p),
           markers: {Marker(markerId: const MarkerId('delivery'), position: _pin!, draggable: true, onDragEnd: (p) => setState(() => _pin = p))},
         ),
