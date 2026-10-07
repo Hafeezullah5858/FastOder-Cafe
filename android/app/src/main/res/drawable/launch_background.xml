@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="#080A0E" />
+    <item android:drawable="@color/fastoder_launch_background" />
     <item>
         <bitmap android:src="@drawable/fastoder_cafe_splash" android:gravity="center" />
     </item>
