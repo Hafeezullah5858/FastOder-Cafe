@@ -54,14 +54,42 @@ service cloud.firestore {
 
     match /products/{productId} {
       allow read: if true;
+
       allow create: if isVendor()
         && (role() != 'home_chef' || userDoc(request.auth.uid).sellerApproved == true)
         && request.resource.data.vendorId == request.auth.uid
+        && request.resource.data.vendorType == (role() == 'home_chef' ? 'home_chef' : 'restaurant')
+        && request.resource.data.foodCategory in ['restaurant', 'home_made']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
         && request.resource.data.price is number
-        && request.resource.data.price >= 0;
-      allow update, delete: if isVendor()
+        && request.resource.data.price >= 0
+        && request.resource.data.active is bool
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 1000;
+
+      allow update: if isVendor()
+        && (role() != 'home_chef' || userDoc(request.auth.uid).sellerApproved == true)
         && resource.data.vendorId == request.auth.uid
-        && request.resource.data.vendorId == resource.data.vendorId;
+        && request.resource.data.vendorId == resource.data.vendorId
+        && request.resource.data.vendorType == (role() == 'home_chef' ? 'home_chef' : 'restaurant')
+        && request.resource.data.foodCategory in ['restaurant', 'home_made']
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
+        && request.resource.data.price is number
+        && request.resource.data.price >= 0
+        && request.resource.data.active is bool
+        && request.resource.data.imageUrl is string
+        && request.resource.data.imageUrl.size() <= 1000
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'foodCategory', 'name', 'price', 'active', 'imageUrl', 'updatedAt'
+        ]);
+
+      allow delete: if isVendor()
+        && (role() != 'home_chef' || userDoc(request.auth.uid).sellerApproved == true)
+        && resource.data.vendorId == request.auth.uid;
     }
 
     function orderBaseFieldsUnchanged() {

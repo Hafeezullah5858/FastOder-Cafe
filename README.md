@@ -58,15 +58,13 @@ iOS requires macOS + Xcode.
 - Rider assignment uses a shared OrderService method
 - Online gateway credentials are still intentionally not hard-coded; COD remains the working payment method
 
+## Home Made Food marketplace
 
-## Home Made Food / Home Chef marketplace (v6+)
-- Customers can apply from Profile → Sell Home Made Food.
-- Applications start as `pending`; only an Admin can approve them.
-- Approved users receive the `home_chef` role and can use the Seller Panel.
-- Home Chefs can add food items and upload photos to Firebase Storage.
-- Food items carry `vendorType: home_chef`; the same cart/order/rider/review flow is reused.
-- Firebase Storage rules restrict seller photo uploads to approved sellers.
-- Deploy both `firestore.rules` and `storage.rules` before production.
+- Home Made is a regular food category in the customer marketplace.
+- Vendors can manage their food items, prices, and photos through the Seller Panel.
+- Home Made items use `foodCategory: home_made`.
+- Existing `home_chef` accounts remain supported for backward compatibility.
+- Seller photo uploads remain subject to Firebase Storage security rules.
 
 ## v7 Marketplace billing
 - Checkout now shows subtotal, delivery fee, and total.

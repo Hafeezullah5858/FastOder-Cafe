@@ -11,3 +11,7 @@ ios/.symlinks/
 *.jks
 *.keystore
 .env
+node_modules/
+npm-audit-report.json
+firestore-debug.log
+firestore.rules.backup
