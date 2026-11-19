@@ -43,6 +43,8 @@ class BusinessApplicationService {
           applicationSnap.data()?['status'] == 'pending') {
         throw StateError('Your application is already waiting for review.');
       }
+      final existingCreatedAt = applicationSnap.data()?['createdAt'];
+
       tx.set(applicationRef, {
         'userId': uid,
         'applicantName': userSnap.data()?['name'] ?? '',
@@ -54,9 +56,7 @@ class BusinessApplicationService {
         if (type == 'rider') 'vehicleType': vehicleType.trim(),
         if (type == 'rider') 'vehicleRegistration': vehicleRegistration.trim(),
         'status': 'pending',
-        'createdAt': applicationSnap.exists
-            ? applicationSnap.data()?['createdAt'] ?? FieldValue.serverTimestamp()
-            : FieldValue.serverTimestamp(),
+        'createdAt': existingCreatedAt ?? FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     });
