@@ -54,7 +54,9 @@ class OrderService {
     await ref.update({
       'status': 'cancelled',
       'cancellationReason': reason.trim(),
-      'refundStatus': paymentMethod == 'cash_on_delivery' ? 'not_applicable' : 'pending',
+      'refundStatus': paymentMethod == 'cash_on_delivery' || data['paymentStatus'] != 'paid'
+          ? 'not_applicable'
+          : 'pending',
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -64,8 +66,18 @@ class OrderService {
     await ref.update({'status': status, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
+  Future<void> completeDelivery({required String orderId, required String otp}) async {
+    await FirebaseFunctions.instanceFor(region: 'asia-south1')
+        .httpsCallable('completeDeliveryWithOtp')
+        .call({'orderId': orderId, 'code': otp.trim()});
+  }
+
   Future<void> assignRider(String orderId, String riderId) async {
-    final ref = _db.collection('orders').doc(orderId);
-    await ref.update({'riderId': riderId, 'status': 'picked_up', 'updatedAt': FieldValue.serverTimestamp()});
+    if (FirebaseAuth.instance.currentUser?.uid != riderId) {
+      throw StateError('Rider session mismatch.');
+    }
+    await FirebaseFunctions.instanceFor(region: 'asia-south1')
+        .httpsCallable('assignRiderSecure')
+        .call({'orderId': orderId});
   }
 }

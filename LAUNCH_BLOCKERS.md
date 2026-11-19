@@ -9,6 +9,6 @@ The source now contains the core production hardening: trusted order pricing, se
 4. Configure permanent Google Play App Signing / upload key.
 5. Enable Crashlytics and verify a test crash.
 6. Run Firebase Emulator security tests and real-device end-to-end tests.
-7. Keep online card/JazzCash/Easypaisa payments disabled until provider credentials, server-side verification and webhooks are implemented.
+7. Online card charging and gateway processing are intentionally excluded. Before enabling manual JazzCash/Easypaisa/Bank Transfer in production, enter verified business account details in Admin > Payment Setup and complete customer proof upload + admin review tests.
 
 The APK can compile without a Maps key, but map/route features require the restricted production key at runtime.

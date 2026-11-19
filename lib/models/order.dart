@@ -18,6 +18,7 @@ class OrderModel {
   final List<Map<String, dynamic>> items;
   final String address;
   final String paymentMethod;
+  final Map<String, dynamic>? paymentAccountSnapshot;
   final String paymentStatus;
   final String refundStatus;
   final String cancellationReason;
@@ -43,6 +44,7 @@ class OrderModel {
     this.items = const [],
     this.address = '',
     this.paymentMethod = 'cash_on_delivery',
+    this.paymentAccountSnapshot,
     this.paymentStatus = 'pending_cash',
     this.refundStatus = 'not_applicable',
     this.cancellationReason = '',
@@ -54,7 +56,7 @@ class OrderModel {
   Map<String, dynamic> toMap() => {
     'customerId': customerId, 'vendorId': vendorId, 'riderId': riderId,
     'status': status, 'subtotal': subtotal, 'deliveryFee': deliveryFee, 'platformFee': platformFee, 'commission': commission, 'commissionRate': commissionRate, 'sellerPayout': sellerPayout, 'discount': discount, 'couponCode': couponCode, 'total': total, 'items': items, 'address': address,
-    'paymentMethod': paymentMethod, 'paymentStatus': paymentStatus, 'refundStatus': refundStatus, 'cancellationReason': cancellationReason, 'createdAt': FieldValue.serverTimestamp(),
+    'paymentMethod': paymentMethod, 'paymentAccountSnapshot': paymentAccountSnapshot, 'paymentStatus': paymentStatus, 'refundStatus': refundStatus, 'cancellationReason': cancellationReason, 'createdAt': FieldValue.serverTimestamp(),
   };
 
   factory OrderModel.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
@@ -64,7 +66,7 @@ class OrderModel {
       id: doc.id, customerId: d['customerId'] ?? '', vendorId: d['vendorId'] ?? '', riderId: d['riderId'] ?? '',
       status: d['status'] ?? 'placed', total: ((d['total'] ?? 0) as num).toDouble(), subtotal: ((d['subtotal'] ?? d['total'] ?? 0) as num).toDouble(), deliveryFee: ((d['deliveryFee'] ?? 0) as num).toDouble(), platformFee: ((d['platformFee'] ?? 0) as num).toDouble(), commission: ((d['commission'] ?? 0) as num).toDouble(), discount: ((d['discount'] ?? 0) as num).toDouble(), couponCode: d['couponCode'] ?? '', commissionRate: ((d['commissionRate'] ?? 0.10) as num).toDouble(), sellerPayout: ((d['sellerPayout'] ?? 0) as num).toDouble(),
       items: List<Map<String, dynamic>>.from((d['items'] ?? []).map((e) => Map<String, dynamic>.from(e as Map))),
-      address: d['address'] ?? '', paymentMethod: d['paymentMethod'] ?? 'cash_on_delivery', paymentStatus: d['paymentStatus'] ?? 'pending_cash', refundStatus: d['refundStatus'] ?? 'not_applicable', cancellationReason: d['cancellationReason'] ?? '',
+      address: d['address'] ?? '', paymentMethod: d['paymentMethod'] ?? 'cash_on_delivery', paymentAccountSnapshot: d['paymentAccountSnapshot'] is Map ? Map<String, dynamic>.from(d['paymentAccountSnapshot']) : null, paymentStatus: d['paymentStatus'] ?? 'pending_cash', refundStatus: d['refundStatus'] ?? 'not_applicable', cancellationReason: d['cancellationReason'] ?? '',
       deliveryLat: (d['deliveryLat'] as num?)?.toDouble(), deliveryLng: (d['deliveryLng'] as num?)?.toDouble(),
       createdAt: ts is Timestamp ? ts.toDate() : null,
     );

@@ -37,6 +37,27 @@ class LocationService {
     );
   }
 
+  Future<void> syncRiderLocationVisibility(String riderId) async {
+    final assigned = await _db
+        .collection('orders')
+        .where('riderId', isEqualTo: riderId)
+        .get();
+    final customerIds = assigned.docs
+        .where((doc) =>
+            const ['ready', 'picked_up', 'on_the_way'].contains(
+              doc.data()['status'],
+            ))
+        .map((doc) => doc.data()['customerId']?.toString() ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .take(20)
+        .toList();
+    await _db.collection('rider_locations').doc(riderId).set({
+      'visibleToCustomerIds': customerIds,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   Future<void> updateRiderLocation(String riderId, double lat, double lng) =>
       _db.collection('rider_locations').doc(riderId).set({
         'lat': lat,

@@ -4,6 +4,20 @@ service firebase.storage {
     function signedIn() { return request.auth != null; }
     function userDoc() { return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data; }
     function seller() { return signedIn() && (userDoc().role == 'vendor' || userDoc().role == 'home_chef') && (userDoc().role != 'home_chef' || userDoc().sellerApproved == true); }
+    function isAdmin() { return signedIn() && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    match /payment_proofs/{uid}/{orderId}/{fileName} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if signedIn()
+        && request.auth.uid == uid
+        && firestore.get(/databases/(default)/documents/orders/$(orderId)).data.customerId == uid
+        && firestore.get(/databases/(default)/documents/orders/$(orderId)).data.paymentMethod in ['jazzcash_manual', 'easypaisa_manual', 'bank_transfer_manual']
+        && firestore.get(/databases/(default)/documents/orders/$(orderId)).data.status == 'placed'
+        && firestore.get(/databases/(default)/documents/orders/$(orderId)).data.paymentStatus in ['awaiting_payment', 'payment_rejected']
+        && resource == null
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow delete: if isAdmin();
+    }
     match /home_food/{uid}/{fileName} {
       allow read: if true;
       allow write: if seller() && request.auth.uid == uid && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*');

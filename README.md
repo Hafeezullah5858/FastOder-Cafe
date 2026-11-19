@@ -88,8 +88,9 @@ iOS requires macOS + Xcode.
 - Cash on Delivery is active.
 - Payment records are stored in `payments`.
 - Customer can cancel only while an order is still `placed`.
-- Non-COD cancellations create a `refund_requests` review record. No refund is marked successful until the real payment gateway confirms it.
-- JazzCash, Easypaisa and card gateways require merchant credentials and server-side webhook/signature verification before activation.
+- A cancelled, already-paid manual-transfer order creates a `refund_requests` review record. An admin marks it complete only after manually sending the refund; the app does not issue automatic refunds.
+- Manual offline JazzCash, Easypaisa and Bank Transfer options are available when the Admin configures account details; customers submit transaction IDs and receipt images for manual verification. No online payment gateway or card charging is implemented.
+- Vendor operations include menu categories, stock limits, sales, seller payout requests and a manual store open/close switch. Rider delivery completion uses a customer-only OTP verified by a trusted callable. Home Chef applicants are reviewed by Admin, and sellers can request manual payouts against their recorded earnings.
 
 ## v10 Customer reliability improvements
 - Cart is persisted locally with SharedPreferences, so closing/reopening the app does not lose the cart.
@@ -158,3 +159,18 @@ Run `./scripts/launch_gate.sh` on a machine with Flutter installed. Review `LAUN
 - Checkout address, phone and coupon fields now use persistent controllers instead of creating a new controller on every rebuild.
 - Version bumped to 1.5.0+7.
 - This source package still requires the owner's Firebase project, restricted Maps key, production App Check registration, Play signing, and real-device QA before public release.
+
+## Working-source verification commands
+
+```bash
+npm test
+npm install
+npm run test:rules
+flutter pub get
+dart format --set-exit-if-changed lib test
+flutter analyze
+flutter test
+flutter build apk --release --dart-define=GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY"
+```
+
+`npm test` runs the local pure Node backend-policy tests. `npm run test:rules` starts the Firestore emulator and runs the rules-unit tests; it requires Firebase CLI and the root npm dev dependencies. The Flutter commands require a Flutter-enabled environment. Passing the Node tests alone is not a completed app build or a production release.

@@ -1,34 +1,33 @@
-# FastOder Cafe — Final Engineering Status
+# FastOder Cafe — Engineering Status (17 November 2026)
 
-This build hardens the core production flow without changing the user-facing ordering design.
+This is an actively updated working source snapshot, **not a production release or launch certification**. The original uploaded archive remains separately preserved. No Firebase deployment, migration, production account update, or live payment activation has been performed by this work pass.
 
-## Completed in source
-- FastOder Cafe branding/assets.
-- Email/password authentication and password reset.
-- Server-authoritative order creation through `createOrderSecure`.
-- Server-side product price, coupon, delivery fee, commission, payout and total calculation.
-- Idempotent order creation using a client request ID.
-- COD payment record creation on the trusted backend.
-- Client-side order creation and payment-record writes removed.
-- Vendor/rider order status writes remain protected by Firestore rules.
-- Notification writes removed from vendor/rider clients.
-- Server-side order notifications and FCM push sending via `processOrderUpdate`.
-- Seller earning ledger on delivered orders.
-- Android rider location stream configured with Geolocator foreground-service notification and Android 14 location-service permissions.
-- Refund-review record for future online-payment cancellations.
-- Invalid/stale FCM token cleanup.
-- Cloud Functions deployed in `asia-south1` for Pakistan-region latency.
-- Firebase App Check integration in the app and Crashlytics integration.
-- Customer/vendor/rider/admin Firestore access controls.
+## Implemented in source
+- Customer, Vendor, Rider and Super Admin app flows.
+- Server-authoritative order creation, pricing, coupons, stock reservation and cancellation restock.
+- COD plus manual JazzCash, Easypaisa and Bank Transfer proof/review; no online card charging.
+- Vendor and Rider application forms, pending status, trusted Admin approval/rejection and account suspension/downgrade.
+- Admin dashboard queues for Vendor/Rider applications, active delivery monitor, secure rider assignment, payments, refunds, people, coupons, payment setup, support, payouts and audit log.
+- Rider self-claim and Admin assignment are transaction-protected; only ready, unassigned orders can be assigned and manual payments must be verified.
+- Rider delivery completion is protected by a six-digit customer OTP, server-side hash, expiry and attempt lock.
+- Customer live tracking subscribes to the current order and rider location; Firestore location reads are restricted to the assigned customer's active delivery.
+- Rider foreground location stream, server notifications and FCM integration are present in source.
+- Firestore/Storage rules and composite indexes include the new onboarding and tracking flows.
 
-## External production actions still required
-These cannot be safely hard-coded into a source ZIP:
-1. Deploy Firestore rules/indexes and Cloud Functions to the Firebase project.
-2. Register/verify Firebase App Check Play Integrity for `com.foododer.app` and then enforce App Check on sensitive callable functions.
-3. Add a restricted Google Maps API key as the GitHub `GOOGLE_MAPS_API_KEY` secret and enable Maps SDK + Directions API.
-4. Configure a permanent Google Play upload key/App Signing for the release.
-5. Test FCM, Maps, background rider location, permissions and the complete customer → vendor → rider flow on a physical Android phone. Android background-location policy/permission must also be reviewed before Play Store release.
-6. Online card/JazzCash/Easypaisa payments remain intentionally disabled until a real provider, server-side verification and webhook/signature validation are configured.
+## Verification completed in this environment
+- `node --check functions/index.js`: PASS.
+- `node --check functions/payment_policy.js`: PASS.
+- `node --check scripts/test-firestore-rules.cjs`: PASS.
+- Root `npm test`: 15/15 PASS (Node policy/source-contract tests).
+- JSON parsing and Dart lexical/delimiter checks are recorded in `WORK_PROGRESS_2026-11-17.md` when rerun.
 
-## Important pricing note
-The app now treats the backend as the source of truth. The current trusted delivery rule is Rs. 80, with free delivery at subtotal >= Rs. 2500; distance pricing is intentionally not guessed on the server until a trusted route-distance service is configured.
+## Still required before production
+1. Run `flutter pub get`, `dart format`, `flutter analyze`, `flutter test`, and Android APK/AAB builds in a Flutter-enabled environment.
+2. Run Firestore and Storage emulator tests with Firebase CLI; the updated Firestore test script has not yet run in an emulator.
+3. Perform physical Android end-to-end tests for all four roles, including background GPS, push notifications, payment proof, approvals and OTP delivery.
+4. Configure and verify Google Maps API, production App Check/Crashlytics, and permanent Android release signing.
+5. Decide rider earnings/payout policy and complete finance/report exports.
+6. Back up and review the actual Firebase project's data/rules, then obtain explicit owner approval before any deployment or live-data change.
+
+## Safety boundary
+No Firebase deploy, live data mutation, migration, production payment activation, or Play Store publishing has been performed. Do not describe this source snapshot as production-ready until the Flutter build, emulator tests and device tests pass.

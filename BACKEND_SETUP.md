@@ -27,7 +27,7 @@ The generated Android/iOS platform folders must use the same Firebase app identi
 `geolocator` is included and `LocationService` requests device location permission. Add the Android/iOS location permission configuration and a restricted Maps SDK/API key when a map UI is added.
 
 ## 5. Payments
-Cash on Delivery is wired into the order flow. Online payments (JazzCash/Easypaisa/card, etc.) must be integrated through a supported provider with server-side verification. Never put merchant secret keys in Flutter source code.
+Cash on Delivery remains available. Manual offline transfers are supported through admin-configured JazzCash, Easypaisa and Bank Transfer account details. Customers submit a transaction reference and receipt image; a trusted Cloud Function keeps the order blocked until an admin verifies it. No online gateway, card charging or merchant secret is used.
 
 ## 6. Current implementation
 - Firebase initialization
@@ -39,7 +39,7 @@ Cash on Delivery is wired into the order flow. Online payments (JazzCash/Easypai
 - Order status field ready for vendor/rider updates
 - GPS service ready for rider location writes
 
-Vendor, rider, admin screens are still scaffolds and should be connected to role-based Firestore access before production deployment.
+Vendor, rider and admin workflows have been expanded in the working source. Admin includes overview, orders, manual payments, refunds, role management, home-chef approval, coupons, payment setup and audit log. Vendor includes order workflow, menu categories, finite stock, sales and store open/close settings. Rider includes available, active and completed deliveries, live location and OTP completion. These screens still require Flutter analysis/build and Firebase Emulator/device end-to-end verification before production.
 
 ## Google Maps + Live Rider Tracking
 1. In Google Cloud Console enable **Maps SDK for Android** for your Firebase/Google project.
